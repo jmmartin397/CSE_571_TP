@@ -283,12 +283,5 @@ class EpisodicSemiGradientSarsaAgent(ApproximateQAgent):
 
     def final(self, state):
         "Called at the end of each game."
-        # call the super-class final method
         self.isFirstAction = True
         ApproximateQAgent.final(self, state)
-        # terminal state update
-        # currentQ = self.getQValue(state, action)
-        # features = self.featExtractor.getFeatures(state, action)
-        # new_weights = self.getWeights().copy()
-        # current_weights = self.getWeights()
-        # difference = reward - currentQ
