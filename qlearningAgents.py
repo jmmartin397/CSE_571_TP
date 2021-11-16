@@ -215,3 +215,43 @@ class ApproximateQAgent(PacmanQAgent):
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
             pass
+
+class TrueOnlineLambdaSarasa(PacmanQAgent):
+    """
+       ApproximateTrueOnlineLambdaSarasaAgent
+
+       You should only have to overwrite getQValue
+       and update.  All other QLearningAgent functions
+       should work as is.
+    """  
+
+    def __init__(self, lamb=0.9, extractor='IdentityExtractor', **args):
+        self.featExtractor = util.lookup(extractor, globals())()
+        PacmanQAgent.__init__(self, **args)
+        self.lamb = lamb
+        self.z = util.Counter()
+        self.w = util.Counter()
+        self.qOld = None
+
+
+    def learn(self, state, action, reward, nextState, done):
+        feat = self.featExtractor.getFeatures(state, action)
+        action1 = self.getAction(nextState)
+        nextFeat = self.featExtractor.getFeatures(nextState, action1)
+        q = self.getQValue(feat, action)
+        nextQ = self.getQValue(nextFeat, action1)
+        td_error = reward + self.gamma * nextQ - q
+        if self.qOld is None:
+            self.qOld = q
+
+        for k in feat.keys():
+          self.z[k] = self.lamb*self.gamma*self.z[k] + feat[k] -(self.lr*self.gamma*self.lamb*sum(feat[k]*self.z[k] for k in feat.keys()))*feat
+          self.w[k] += self.lr*(td_error + q - self.qOld)*self.z[k] - self.lr*(q - self.qOld)*feat[k]
+        self.qOld = nextQ
+        if done:
+            self.clearTraces()
+
+    def clearTraces(self):
+        self.qOld = None
+        for a in range(self.action_dim):
+            self.z[a].fill(0.0)
