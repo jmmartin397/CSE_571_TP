@@ -210,15 +210,80 @@ class ApproximateQAgent(PacmanQAgent):
         # call the super-class final method
         PacmanQAgent.final(self, state)
 
-        # did we finish training?
-        if self.episodesSoFar == self.numTraining:
-            # you might want to print your weights here for debugging
-            "*** YOUR CODE HERE ***"
+
+
+class EpisodicSemiGradientSarsaAgent(ApproximateQAgent):
+    def __init__(self, **args):
+        ApproximateQAgent.__init__(self, **args)
+        self.isFirstAction = True
+        self.expectedTerminalState = False
+
+    def getQValue(self, state, action):
+        """
+          Should return Q(state,action) = w * featureVector
+          where * is the dotProduct operator
+        """
+        features = self.featExtractor.getFeatures(state, action)
+        q_value = 0
+        weights = self.getWeights()
+        for feature, value in features.items():
+            q_value += weights[feature] * value
+        return q_value
+
+    def getAction(self, state):
+        """
+        returns action determined in previous update (as per page 244) and then
+        informs parent of action for Pacman. 
+        """
+        legalActions = self.getLegalActions(state)
+        if self.isFirstAction:
+            if flipCoin(self.epsilon):
+                action = random.choice(legalActions)
+            else:
+                action = self.computeActionFromQValues(state)
+            self.isFirstAction = False
+        else:
+            action = self.currentAction
+        self.doAction(state, action)
+        return action
+
+    def update(self, state, action, nextState, reward):
+        """
+           Should update your weights based on transition
+        """
+        legalActions = self.getLegalActions(nextState)
+        if not legalActions:
+            nextQ = 0
+            self.currentAction = None
+            
+        else:
+            # choose next action according to epsilon greedy policy
+            # this is necessary so the next time the game loop calls getAction() the
+            # returned action is based off the current Q function (like in the algorithm)
+            # and not based on the updated verison
+            if flipCoin(self.epsilon):
+                nextAction = random.choice(legalActions)
+            else:
+                nextAction = self.computeActionFromQValues(nextState)
+            nextQ = self.getQValue(nextState, nextAction)
+            self.currentAction = nextAction    
+        currentQ = self.getQValue(state, action)
+        features = self.featExtractor.getFeatures(state, action)
+        new_weights = self.getWeights().copy()
+        current_weights = self.getWeights()
+        difference = reward + self.discount * nextQ - currentQ
+        for feature, partialDerivative in features.items():
+            new_weights[feature] = current_weights[feature] + self.alpha * difference * partialDerivative
+        self.weights = new_weights
+
+    def final(self, state):
+        "Called at the end of each game."
+        self.isFirstAction = True
+        ApproximateQAgent.final(self, state)
 
 class TrueOnlineLambdaSarsa(ApproximateQAgent):
     """
        ApproximateTrueOnlineLambdaSarasaAgent
-
        You should only have to overwrite getQValue
        and update.  All other QLearningAgent functions
        should work as is.
