@@ -234,10 +234,7 @@ class TrueOnlineLambdaSarsa(ApproximateQAgent):
 
     def getWeights(self):
         return self.weights
-
-    def getEligiblityTraces(self):
-        return self.z
-    
+   
     def getQValue(self, state, action):
         """
           Should return Q(state,action) = w * featureVector
