@@ -13,6 +13,7 @@ import tqdm
 def average_reward_on_episode(agent_classes, common_params, agent_specific_params, env, num_runs, num_episodes):
     runs = []
     display = textDisplay.NullGraphics()
+    graphics_display = graphicsDisplay.PacmanGraphics()
     rules = ClassicGameRules()
     
     #generate data
@@ -33,14 +34,14 @@ def average_reward_on_episode(agent_classes, common_params, agent_specific_param
                 )
                 game.run()
                 #test game
-                # agent.switch_to_test_mode()
-                # game = rules.newGame(
-                #     layout=env['layout'],
-                #     pacmanAgent=agent,
-                #     ghostAgents=env['ghosts'],
-                #     display=display
-                # )
-                # game.run()
+                agent.switch_to_test_mode()
+                game = rules.newGame(
+                    layout=env['layout'],
+                    pacmanAgent=agent,
+                    ghostAgents=env['ghosts'],
+                    display=display
+                )
+                game.run()
                 run[agent_name].append(game.state.getScore())
         runs.append(run)
     #reformat data
