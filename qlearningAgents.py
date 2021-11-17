@@ -214,7 +214,6 @@ class ApproximateQAgent(PacmanQAgent):
         if self.episodesSoFar == self.numTraining:
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
-            print("Done with all episode!!!")
 
 class TrueOnlineLambdaSarasa(ApproximateQAgent):
     """
@@ -256,10 +255,9 @@ class TrueOnlineLambdaSarasa(ApproximateQAgent):
         "*** YOUR CODE HERE ***"
         feats = self.featExtractor.getFeatures(state, action)
         nextAction = self.getAction(nextState)
-        nextFeats = self.featExtractor.getFeatures(nextState, nextAction)
         TDE = (reward + self.discount*self.computeValueFromQValues(nextState)) - self.getQValue(state, action)
         Q = self.getQValue(state, action)
-        nextQ = self.getQValue(nextState, nextAction)
+        nextQ = self.getQValue(nextState, nextAction) if nextAction else 0
         TDE = reward + self.discount * nextQ - Q
         for k in feats.keys():
           self.z[k] = self.lamb*self.discount*self.z[k] + feats[k] -(self.alpha*self.discount*self.lamb*sum(feats[k]*self.z[k] for k in feats.keys()))*feats[k]
