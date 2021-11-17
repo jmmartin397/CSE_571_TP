@@ -259,7 +259,7 @@ class TrueOnlineLambdaSarsa(ApproximateQAgent):
         nextQ = self.getQValue(nextState, nextAction) if nextAction else 0
         TDE = reward + self.discount * nextQ - Q
         for k in feats.keys():
-          self.z[k] = self.lamb*self.discount*self.z[k] + feats[k] -(self.alpha*self.discount*self.lamb*sum(feats[k]*self.z[k] for k in feats.keys()))*feats[k]
+          self.z[k] = self.lamb*self.discount*self.z[k] + (1 - self.alpha*self.discount*self.lamb*sum(feats[k]*self.z[k] for k in feats.keys()))*feats[k]
           self.weights[k] += self.alpha*(TDE + Q - self.qOld)*self.z[k] - self.alpha*(Q - self.qOld)*feats[k]
         self.qOld = nextQ
 
