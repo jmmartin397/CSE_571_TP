@@ -214,9 +214,9 @@ class ApproximateQAgent(PacmanQAgent):
         if self.episodesSoFar == self.numTraining:
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
-            pass
+            print("Done with all episode!!!")
 
-class TrueOnlineLambdaSarasa(PacmanQAgent):
+class TrueOnlineLambdaSarasa(ApproximateQAgent):
     """
        ApproximateTrueOnlineLambdaSarasaAgent
 
@@ -226,32 +226,52 @@ class TrueOnlineLambdaSarasa(PacmanQAgent):
     """  
 
     def __init__(self, lamb=0.9, extractor='IdentityExtractor', **args):
+        ApproximateQAgent.__init__(self, **args)
         self.featExtractor = util.lookup(extractor, globals())()
-        PacmanQAgent.__init__(self, **args)
         self.lamb = lamb
         self.z = util.Counter()
-        self.w = util.Counter()
-        self.qOld = None
+        self.weights = util.Counter()
+        self.qOld = 0
 
+    def getWeights(self):
+        return self.weights
 
-    def learn(self, state, action, reward, nextState, done):
-        feat = self.featExtractor.getFeatures(state, action)
-        action1 = self.getAction(nextState)
-        nextFeat = self.featExtractor.getFeatures(nextState, action1)
-        q = self.getQValue(feat, action)
-        nextQ = self.getQValue(nextFeat, action1)
-        td_error = reward + self.gamma * nextQ - q
-        if self.qOld is None:
-            self.qOld = q
+    def getEligiblityTraces(self):
+        return self.z
+    
+    def getQValue(self, state, action):
+        """
+          Should return Q(state,action) = w * featureVector
+          where * is the dotProduct operator
+        """
+        "*** YOUR CODE HERE ***"
+        feats = self.featExtractor.getFeatures(state, action)
+        weights = self.getWeights()
+        return sum(feats[k]*weights[k] for k in feats.keys())
 
-        for k in feat.keys():
-          self.z[k] = self.lamb*self.gamma*self.z[k] + feat[k] -(self.lr*self.gamma*self.lamb*sum(feat[k]*self.z[k] for k in feat.keys()))*feat
-          self.w[k] += self.lr*(td_error + q - self.qOld)*self.z[k] - self.lr*(q - self.qOld)*feat[k]
+    def update(self, state, action, nextState, reward):
+        """
+           Should update your weights based on transition
+        """
+        "*** YOUR CODE HERE ***"
+        feats = self.featExtractor.getFeatures(state, action)
+        nextAction = self.getAction(nextState)
+        nextFeats = self.featExtractor.getFeatures(nextState, nextAction)
+        TDE = (reward + self.discount*self.computeValueFromQValues(nextState)) - self.getQValue(state, action)
+        Q = self.getQValue(state, action)
+        nextQ = self.getQValue(nextState, nextAction)
+        TDE = reward + self.discount * nextQ - Q
+        for k in feats.keys():
+          self.z[k] = self.lamb*self.discount*self.z[k] + feats[k] -(self.alpha*self.discount*self.lamb*sum(feats[k]*self.z[k] for k in feats.keys()))*feats[k]
+          self.weights[k] += self.alpha*(TDE + Q - self.qOld)*self.z[k] - self.alpha*(Q - self.qOld)*feats[k]
         self.qOld = nextQ
-        if done:
-            self.clearTraces()
 
     def clearTraces(self):
-        self.qOld = None
-        for a in range(self.action_dim):
-            self.z[a].fill(0.0)
+        self.qOld = 0
+        self.z = util.Counter()
+
+    def final(self, state):
+        "Called at the end of each game."
+        # call the super-class final method
+        self.clearTraces()
+        ApproximateQAgent.final(self, state)
