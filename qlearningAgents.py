@@ -255,7 +255,6 @@ class TrueOnlineLambdaSarsa(ApproximateQAgent):
         "*** YOUR CODE HERE ***"
         feats = self.featExtractor.getFeatures(state, action)
         nextAction = self.getAction(nextState)
-        TDE = (reward + self.discount*self.computeValueFromQValues(nextState)) - self.getQValue(state, action)
         Q = self.getQValue(state, action)
         nextQ = self.getQValue(nextState, nextAction) if nextAction else 0
         TDE = reward + self.discount * nextQ - Q
