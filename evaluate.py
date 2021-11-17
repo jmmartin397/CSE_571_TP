@@ -33,14 +33,14 @@ def average_reward_on_episode(agent_classes, common_params, agent_specific_param
                 )
                 game.run()
                 #test game
-                agent.switch_to_test_mode()
-                game = rules.newGame(
-                    layout=env['layout'],
-                    pacmanAgent=agent,
-                    ghostAgents=env['ghosts'],
-                    display=display
-                )
-                game.run()
+                # agent.switch_to_test_mode()
+                # game = rules.newGame(
+                #     layout=env['layout'],
+                #     pacmanAgent=agent,
+                #     ghostAgents=env['ghosts'],
+                #     display=display
+                # )
+                # game.run()
                 run[agent_name].append(game.state.getScore())
         runs.append(run)
     #reformat data
@@ -114,7 +114,7 @@ def evaluate(agents, hyper_params, envs, num_training, eval_interval, num_eval):
 
 if __name__ == '__main__':
     common_params = {
-        'alpha': .001,
+        'alpha': .01,
         'epsilon': .05,
         'gamma': .9,
     }
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     }
     agent_classes = {
         'approx-q-b': ApproximateQAgent,
-        'approx-q-s': ApproximateQAgent,
+        # 'approx-q-s': ApproximateQAgent,
         #'epi-sarsa': EpisodicSemiGradientSarsaAgent,
     }
     envs = {
@@ -137,17 +137,21 @@ if __name__ == '__main__':
         'trickyPacman': {
             'layout': layout.getLayout('trickyClassic'),
             'ghosts': [ghostAgents.RandomGhost(i+1) for i in range(4)],
-        }
+        },
+        'sparsePacman': {
+            'layout': layout.getLayout('sparseMedClassic'),
+            'ghosts': [ghostAgents.RandomGhost(i+1) for i in range(2)],
+        },
     }
 
-    num_runs = 100
-    num_episodes = 400
+    num_runs = 1
+    num_episodes = 1000
 
     results = average_reward_on_episode(
         agent_classes, 
         common_params, 
         agent_specific_params, 
-        envs['trickyPacman'],
+        envs['sparsePacman'],
         num_runs,
         num_episodes
     )

@@ -186,5 +186,11 @@ class BetterExtractor(FeatureExtractor):
             # will diverge wildly
             features["closest-capsule"] = float(dist) / (walls.width * walls.height)
 
+        dist = closestObject((next_x, next_y), scared_ghosts, walls)
+        if dist is not None:
+            # make the distance a number less than one otherwise the update
+            # will diverge wildly
+            features["closest-scared_ghost"] = float(dist) / (walls.width * walls.height)
+
         features.divideAll(10.0)
         return features
