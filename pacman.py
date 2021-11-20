@@ -77,20 +77,11 @@ class GameState:
     # Accessor methods: use these to access state data #
     ####################################################
 
-    # static variable keeps track of which states have had getLegalActions called
-    explored = set()
-
-    def getAndResetExplored():
-        tmp = GameState.explored.copy()
-        GameState.explored = set()
-        return tmp
-    getAndResetExplored = staticmethod(getAndResetExplored)
 
     def getLegalActions(self, agentIndex=0):
         """
         Returns the legal actions for the agent specified.
         """
-#        GameState.explored.add(self)
         if self.isWin() or self.isLose():
             return []
 
@@ -129,8 +120,6 @@ class GameState:
         # Book keeping
         state.data._agentMoved = agentIndex
         state.data.score += state.data.scoreChange
-        GameState.explored.add(self)
-        GameState.explored.add(state)
         return state
 
     def getLegalPacmanActions(self):
