@@ -1,0 +1,15 @@
+
+
+Data to generate:
+
+100 runs 300 episodes
+    epsilon: .5
+
+    alpha values:
+        josh: .1
+
+        ryan: .01
+
+        dhruv: .001
+
+        sanath: .0001
