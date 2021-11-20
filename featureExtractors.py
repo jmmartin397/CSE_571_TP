@@ -166,13 +166,23 @@ class BetterExtractor(FeatureExtractor):
         # count the number of scared ghosts 1-step away
         features["#-of-scared-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(
             g, walls) for g in scared_ghosts)
+        # **********Commenting the ghost centroid extraction for now since I need to generalize it for more than 2 ghosts************
+        # if non_scared_ghosts:
+        #     centroid = lambda ghosts: (sum(gh[0] for gh in ghosts)/len(ghosts), sum(gh[1] for gh in ghosts)/len(ghosts))
+        #     ghostCentroid = non_scared_ghosts[0] if len(non_scared_ghosts) == 1 else centroid(non_scared_ghosts)
+        #     distance = lambda pac, centroid: math.sqrt((ghostCentroid[0]-pac[0])**2 + (ghostCentroid[1]-pac[1])**2)
+        #     features["non-scared-centroid-distance"] = distance((x,y), centroid(non_scared_ghosts))/ (walls.width * walls.height)
+        
+        # if scared_ghosts:
+        #     centroid = lambda ghosts: (sum(gh[0] for gh in ghosts)/len(ghosts), sum(gh[1] for gh in ghosts)/len(ghosts))
+        #     ghostCentroid = scared_ghosts[0] if len(scared_ghosts) == 1 else centroid(scared_ghosts)
+        #     distance = lambda pac, centroid: math.sqrt((ghostCentroid[0]-pac[0])**2 + (ghostCentroid[1]-pac[1])**2)
+        #     features["scared-centroid-distance"] = distance((x,y), centroid(scared_ghosts))/ (walls.width * walls.height)
 
-        # if there is no danger of ghosts then add the food feature
-        if not features["#-of-non-scared-ghosts-1-step-away"]:
-            if food[next_x][next_y]:
-                features["eats-food"] = 1.0
-            if (next_x, next_y) in capsules:
-                features["eats-capsule"] = 1.0
+        if food[next_x][next_y]:
+            features["can-eat-food"] = 1.0
+        if (next_x, next_y) in capsules:
+            features["can-eat-capsule"] = 1.0
 
         dist = closestFood((next_x, next_y), food, walls)
         if dist is not None:
