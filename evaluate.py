@@ -57,13 +57,6 @@ def train_and_evaluate_worker(args):
         return
 
 
-
-def train_and_evaluate_single_thread(run_indexes, *args):
-    num_runs = len(run_indexes)
-    for run_no in tqdm.tqdm(run_indexes):
-        train_and_evaluate_worker(tuple([run_no, *args]))
-
-
 def train_and_evaluate(run_indexes, batch_name, *args, proc_count=None):
     """ Train and evaluate agents using the train_and_evalaute_worker function.
 
@@ -79,7 +72,7 @@ def train_and_evaluate(run_indexes, batch_name, *args, proc_count=None):
         # try to leave at least one thread free for GUI repsonsiveness
         proc_count = max(1, multiprocessing.cpu_count() - 1)
     
-    pool = Pool(processes=proc_count)#, initializer=initializer)
+    pool = Pool(processes=proc_count)
     params = [tuple([run_no, batch_name, *args]) for run_no in run_indexes]
     desc = '{} processes'.format(proc_count)
     try:
@@ -135,7 +128,10 @@ def get_batch_run_indexes_yet_to_go(batch_name, num_runs):
     """ returns a list of the index numbers from 0 to num_runs -1 have yet to
     had data written to a run#.csv file where # in the run index.
     """
-    fnames = os.listdir(os.path.join(RUN_DATA_DIRECTORY, batch_name))
+    try:
+        fnames = os.listdir(os.path.join(RUN_DATA_DIRECTORY, batch_name))
+    except FileNotFoundError:
+        fnames = []
     # fname format: run#.csv where # is an int
     #extract that int
     completed_run_indexes = [int(fname[3:].split('.')[0]) for fname in fnames]
@@ -144,10 +140,29 @@ def get_batch_run_indexes_yet_to_go(batch_name, num_runs):
     return indexes_yet_to_go
 
 
+def anova(batch_name):
+    """ Run an ANOVA (analysis of variance) test on the final episode scores
+    from each run to determine if there is a statistically significant difference
+    in the mean score of each agent at convergence.
+    """
+    runs = read_run_data(batch_name)
+    last_episode_scores = {agent_name: [] for agent_name in runs[0].columns}
+    last_episode_idx = len(runs[0].index) - 1
+    for agent_name in last_episode_scores:
+        for run_df in runs:
+            last_episode_scores[agent_name].append(run_df[agent_name][last_episode_idx])
+
+    # plot histograms to determine if distributions are normal
+    plt.hist(last_episode_scores.values(), label=list(last_episode_scores.keys()), density=True, histtype='bar', bins=15)
+    plt.legend()
+    plt.show()
+
+    # TODO: run ANOVA test
+
 
 if __name__ == '__main__':
     common_params = {
-        'alpha': .1,
+        'alpha': .01,
         'epsilon': .05,
         'gamma': .9,
     }
@@ -178,23 +193,24 @@ if __name__ == '__main__':
     num_runs = 100
     num_episodes = 300
 
-    batch_name = 'all_agents_better_extractor_{}_{}'.format(num_runs, num_episodes)
+    batch_name = 'all_agents_better_extractor_alpha_1e-1_{}_{}'.format(num_runs, num_episodes)
 
     # a list of run indexes that have not yet been completed
     # (i.e. no run#.csv file for index # yet)
     run_indexes = get_batch_run_indexes_yet_to_go(batch_name, num_runs)
 
 
-    # comment out this function call to just generate the graph
-    train_and_evaluate(
-        run_indexes,
-        batch_name,
-        agent_classes, 
-        common_params, 
-        agent_specific_params, 
-        envs['standardPacman'],
-        num_episodes,
-        proc_count=None
-    )
+    # # comment out this function call to just generate the graph
+    # train_and_evaluate(
+    #     run_indexes,
+    #     batch_name,
+    #     agent_classes, 
+    #     common_params, 
+    #     agent_specific_params, 
+    #     envs['standardPacman'],
+    #     num_episodes,
+    #     proc_count=None
+    # )
     
+    # anova(batch_name)
     generate_graph(batch_name, common_params)
