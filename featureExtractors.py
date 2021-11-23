@@ -204,3 +204,61 @@ class BetterExtractor(FeatureExtractor):
 
         features.divideAll(10.0)
         return features
+
+import itertools
+
+class HunterExtractor(FeatureExtractor):
+    """
+    - whether a capsule will be eaten
+    - how far away the next capsule is
+    - sensory field showing locations of ghosts (scared and non-scared) 1 step away
+    - distance to nearest scared ghost
+    """
+    def getFeatures(self, state, action):
+        walls = state.getWalls()
+        capsules = state.getCapsules()
+        scared_ghosts = []
+        non_scared_ghosts = []
+        ghost_states = state.getGhostStates()
+        for ghost_state in ghost_states:
+            if ghost_state.scaredTimer > 2: #will be scared for at least the next move
+                scared_ghosts.append(ghost_state.getPosition())
+            else:
+                non_scared_ghosts.append(ghost_state.getPosition())
+
+        features = util.Counter()
+        features["bias"] = 1.0
+
+        # compute the location of pacman after he takes the action
+        x, y = state.getPacmanPosition()
+        dx, dy = Actions.directionToVector(action)
+        next_x, next_y = int(x + dx), int(y + dy)
+
+        # whether a capsule will be eaten
+        if (next_x, next_y) in capsules:
+            features["can-eat-capsule"] = 1.0
+
+        # distance to closest capsule
+        dist = closestObject((next_x, next_y), capsules, walls)
+        if dist is not None:
+            # make the distance a number less than one otherwise the update will diverge wildly
+            features["closest-capsule"] = float(dist) / (walls.width * walls.height)
+
+        # by adding each of these offsets to a position (x,y) you get the eight
+        # surrounding positions and the position itself
+        sensory_offsets = list(itertools.product([-1, 0, 1], [-1, 0, 1]))
+
+        # sensory field for both types of ghosts
+        for offset in sensory_offsets:
+            pos = (next_x + offset[0], next_y + offset[1])
+            if pos in non_scared_ghosts:
+                features['sense-ghost-{}'.format(offset)] = 1
+            if pos in scared_ghosts:
+                features['sense-scared-ghost-{}'.format(offset)] = 1
+
+        dist = closestObject((next_x, next_y), scared_ghosts, walls)
+        if dist is not None:
+            # make the distance a number less than one otherwise the update will diverge wildly
+            features["closest-scared-ghost"] = float(dist) / (walls.width * walls.height)
+        features.divideAll(10.0)
+        return features

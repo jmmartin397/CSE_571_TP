@@ -162,19 +162,31 @@ def anova(batch_name):
 
 if __name__ == '__main__':
     common_params = {
-        'alpha': .01,
-        'epsilon': .05,
+        # 'alpha': .01,
+        # 'epsilon': .05,
+        'epsilon': .2,
         'gamma': .9,
     }
     agent_specific_params = {
-        'approx-q': {'extractor': 'BetterExtractor'},
-        'epi-sarsa': {'extractor': 'BetterExtractor'},
-        'online-sarsa': {'extractor': 'BetterExtractor'},
+        'approx-q-1e-1': {'extractor': 'HunterExtractor', 'alpha':.1},
+        'approx-q-1e-2': {'extractor': 'HunterExtractor', 'alpha':.01},
+        'approx-q-1e-3': {'extractor': 'HunterExtractor', 'alpha':.001},
+        # 'epi-sarsa': {'extractor': 'BetterExtractor'},
+        # 'online-sarsa': {'extractor': 'BetterExtractor'},
+        # 'OS-lambda-0.9': {'extractor': 'BetterExtractor', 'lamb': .9},
+        # 'OS-lambda-0.45': {'extractor': 'BetterExtractor', 'lamb': .45},
+        # 'OS-lambda-0.0': {'extractor': 'BetterExtractor', 'lamb': 0},
     }
     agent_classes = {
-        'approx-q': ApproximateQAgent,
-        'epi-sarsa': EpisodicSemiGradientSarsaAgent,
-        'online-sarsa': TrueOnlineLambdaSarsa
+        'approx-q-1e-1': ApproximateQAgent,
+        'approx-q-1e-2': ApproximateQAgent,
+        'approx-q-1e-3': ApproximateQAgent,
+        # 'approx-q': ApproximateQAgent,
+        # 'epi-sarsa': EpisodicSemiGradientSarsaAgent,
+        # 'online-sarsa': TrueOnlineLambdaSarsa,
+        # 'OS-lambda-0.9': TrueOnlineLambdaSarsa,
+        # 'OS-lambda-0.45': TrueOnlineLambdaSarsa,
+        # 'OS-lambda-0.0': TrueOnlineLambdaSarsa,
     }
     envs = {
         'standardPacman': {
@@ -189,28 +201,32 @@ if __name__ == '__main__':
             'layout': layout.getLayout('sparseMedClassic'),
             'ghosts': [ghostAgents.RandomGhost(i+1) for i in range(2)],
         },
+        'huntPacman': {
+            'layout': layout.getLayout('smallHuntClassic'),
+            'ghosts': [ghostAgents.DirectionalGhost(i+1) for i in range(4)],
+        },
     }
-    num_runs = 100
+    num_runs = 21
     num_episodes = 300
 
-    batch_name = 'all_agents_better_extractor_alpha_1e-1_{}_{}'.format(num_runs, num_episodes)
+    batch_name = 'aprox_q_hunter_extractor_hunt_lay_varying_alpha_{}_{}'.format(num_runs, num_episodes)
 
     # a list of run indexes that have not yet been completed
     # (i.e. no run#.csv file for index # yet)
     run_indexes = get_batch_run_indexes_yet_to_go(batch_name, num_runs)
 
 
-    # # comment out this function call to just generate the graph
-    # train_and_evaluate(
-    #     run_indexes,
-    #     batch_name,
-    #     agent_classes, 
-    #     common_params, 
-    #     agent_specific_params, 
-    #     envs['standardPacman'],
-    #     num_episodes,
-    #     proc_count=None
-    # )
+    # comment out this function call to just generate the graph
+    train_and_evaluate(
+        run_indexes,
+        batch_name,
+        agent_classes, 
+        common_params, 
+        agent_specific_params, 
+        envs['huntPacman'],
+        num_episodes,
+        proc_count=7
+    )
     
     # anova(batch_name)
     generate_graph(batch_name, common_params)
