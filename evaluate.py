@@ -12,6 +12,7 @@ import os
 import multiprocessing
 from multiprocessing import Pool
 import signal
+from layout_gen import LayoutGen, LayoutGenMultipleBaseLayouts
 
 RUN_DATA_DIRECTORY = './data'
 
@@ -26,12 +27,24 @@ def train_and_evaluate_worker(args):
         for agent_name, agent_class in agent_classes.items():
             agents[agent_name] = agent_class(**common_params, **agent_specific_params[agent_name])
         run = {agent_name: [] for agent_name in agents}
+        if env['useLayoutGen']:
+            if isinstance(env['layout'], list):
+                print('is list')
+                layoutGen = LayoutGenMultipleBaseLayouts(env['layout'], **env['layoutGenParams'])
+            else:
+                print('is not list')
+                layoutGen = LayoutGen(env['layout'], **env['layoutGenParams'])
+        else:
+            print('no gen')
+            layout_to_use = layout.getLayout(env['layout'])
         for agent_name, agent in agents.items():
             for episode_no in range(num_episodes):
+                if env['useLayoutGen']:
+                    layout_to_use = next(layoutGen)
                 #train game
                 agent.switch_to_train_mode()
                 game = rules.newGame(
-                    layout=env['layout'],
+                    layout=layout_to_use,
                     pacmanAgent=agent,
                     ghostAgents=env['ghosts'],
                     display=display
@@ -40,7 +53,7 @@ def train_and_evaluate_worker(args):
                 #test game
                 agent.switch_to_test_mode()
                 game = rules.newGame(
-                    layout=env['layout'],
+                    layout=layout_to_use,
                     pacmanAgent=agent,
                     ghostAgents=env['ghosts'],
                     display=display
@@ -115,6 +128,7 @@ def average_over_runs(runs):
 def generate_graph(batch_name, params):
     runs = read_run_data(batch_name)
     averaged_run_data = average_over_runs(runs)
+    averaged_run_data = averaged_run_data.rolling(50).mean()
     averaged_run_data.plot()
     title_str = ' | '.join(['{}={}'.format(key, value) for key, value in params.items()])
     plt.title(title_str)
@@ -160,73 +174,95 @@ def anova(batch_name):
     # TODO: run ANOVA test
 
 
+bn = 'all_agents_better_extractor_alpha_1e-1_100_300'
+
 if __name__ == '__main__':
     common_params = {
-        # 'alpha': .01,
-        # 'epsilon': .05,
-        'epsilon': .2,
+        'alpha': .1,
+        'epsilon': .05,
         'gamma': .9,
     }
     agent_specific_params = {
-        'approx-q-1e-1': {'extractor': 'HunterExtractor', 'alpha':.1},
-        'approx-q-1e-2': {'extractor': 'HunterExtractor', 'alpha':.01},
-        'approx-q-1e-3': {'extractor': 'HunterExtractor', 'alpha':.001},
-        # 'epi-sarsa': {'extractor': 'BetterExtractor'},
-        # 'online-sarsa': {'extractor': 'BetterExtractor'},
+        # 'approx-q-1e-1': {'extractor': 'HunterExtractor', 'alpha':.1},
+        # 'approx-q-1e-2': {'extractor': 'HunterExtractor', 'alpha':.01},
+        # 'approx-q-1e-3': {'extractor': 'HunterExtractor', 'alpha':.001},
+        'approx-q': {'extractor': 'BetterExtractor'},
+        'epi-sarsa': {'extractor': 'BetterExtractor'},
+        'online-sarsa': {'extractor': 'BetterExtractor', 'lambda': .1},
         # 'OS-lambda-0.9': {'extractor': 'BetterExtractor', 'lamb': .9},
         # 'OS-lambda-0.45': {'extractor': 'BetterExtractor', 'lamb': .45},
         # 'OS-lambda-0.0': {'extractor': 'BetterExtractor', 'lamb': 0},
     }
     agent_classes = {
-        'approx-q-1e-1': ApproximateQAgent,
-        'approx-q-1e-2': ApproximateQAgent,
-        'approx-q-1e-3': ApproximateQAgent,
-        # 'approx-q': ApproximateQAgent,
-        # 'epi-sarsa': EpisodicSemiGradientSarsaAgent,
-        # 'online-sarsa': TrueOnlineLambdaSarsa,
+        # 'approx-q-1e-1': ApproximateQAgent,
+        # 'approx-q-1e-2': ApproximateQAgent,
+        # 'approx-q-1e-3': ApproximateQAgent,
+        'approx-q': ApproximateQAgent,
+        'epi-sarsa': EpisodicSemiGradientSarsaAgent,
+        'online-sarsa': TrueOnlineLambdaSarsa,
         # 'OS-lambda-0.9': TrueOnlineLambdaSarsa,
         # 'OS-lambda-0.45': TrueOnlineLambdaSarsa,
         # 'OS-lambda-0.0': TrueOnlineLambdaSarsa,
     }
     envs = {
         'standardPacman': {
-            'layout': layout.getLayout('mediumClassic'),
+            'layout': 'mediumClassic',
+            'useLayoutGen': False,
             'ghosts': [ghostAgents.RandomGhost(i+1) for i in range(2)],
         },
         'trickyPacman': {
-            'layout': layout.getLayout('trickyClassic'),
+            'layout': 'trickyClassic',
+            'useLayoutGen': False,
             'ghosts': [ghostAgents.RandomGhost(i+1) for i in range(4)],
         },
         'sparsePacman': {
-            'layout': layout.getLayout('sparseMedClassic'),
+            'layout': 'sparseMedClassic',
+            'useLayoutGen': False,
             'ghosts': [ghostAgents.RandomGhost(i+1) for i in range(2)],
         },
         'huntPacman': {
-            'layout': layout.getLayout('smallHuntClassic'),
+            'layout': 'smallHuntClassic',
+            'useLayoutGen': False,
             'ghosts': [ghostAgents.DirectionalGhost(i+1) for i in range(4)],
         },
+        'random': {
+            'layout': [
+                'mediumClassic',
+                'smallClassic',
+                'trickyClassic'    
+            ],
+            'useLayoutGen': True,
+            'layoutGenParams': {
+                'num_ghosts': 2,
+                'num_capsules': 2,
+                'num_food': 50,
+                'wall_removal_precentage': 20
+            },
+            'ghosts': [ghostAgents.RandomGhost(i+1) for i in range(2)],
+        }
     }
-    num_runs = 21
-    num_episodes = 300
+    num_runs = 100
+    num_episodes = 1000
 
-    batch_name = 'aprox_q_hunter_extractor_hunt_lay_varying_alpha_{}_{}'.format(num_runs, num_episodes)
+    batch_name = 'all_agents_better_extractor_standard_params_mediumClassic_{}_{}'.format(num_runs, num_episodes)
 
     # a list of run indexes that have not yet been completed
     # (i.e. no run#.csv file for index # yet)
     run_indexes = get_batch_run_indexes_yet_to_go(batch_name, num_runs)
 
 
-    # comment out this function call to just generate the graph
+    # # comment out this function call to just generate the graph
     train_and_evaluate(
         run_indexes,
         batch_name,
         agent_classes, 
         common_params, 
         agent_specific_params, 
-        envs['huntPacman'],
+        envs['standardPacman'],
         num_episodes,
         proc_count=7
     )
     
     # anova(batch_name)
     generate_graph(batch_name, common_params)
+
