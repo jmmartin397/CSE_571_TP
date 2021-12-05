@@ -1,20 +1,19 @@
 import evaluate
 import matplotlib.pyplot as plt
-
-
-def plot_rolling():
-    bn = 'aprox_q_hunter_extractor_hunt_lay_varying_alpha_100_300'
-    bn = 'all_agents_better_extractor_alpha_1e-1_100_300'
-    run_dfs = evaluate.read_run_data(bn)
-
-    for i in range(10):
-        run_dfs[i].rolling(100).mean().plot()
-        plt.show()
+import pandas as pd
+import math
+import numpy as np
 
 
 def calculate_convergence_episode(run_df, window_width, slope_window_width, slope_threshold):
+    """Roughly calculates the episode at which each algorithm in each run
+    converges.
+
+    This is done by smoothing the data by applying a rolling average and then
+    finding the first point at which the slope between points a given distance
+    in front of and behind it falls below a threshold.
+    """
     run_df = run_df.rolling(window_width).mean().dropna()
-    # print(run_df)
     slope_offset = slope_window_width // 2
     num_episodes = run_df.shape[0]
     first_idx = run_df.index[0]
@@ -31,36 +30,66 @@ def calculate_convergence_episode(run_df, window_width, slope_window_width, slop
     return convergence_episodes
 
 
-def plot_run_with_slope_at_convergence(run):
-    window_width = 100
-    slope_window_width = 40
-    slope_threshold = 5
-    run = run_dfs[0]
-    ce = calculate_convergence_episode(run, window_width, slope_window_width, slope_threshold)
-    run = run.rolling(window_width).mean().dropna()
-    run.plot()
-    for alg_name in run.columns:
-        if ce[alg_name] is not None:
-            first_idx = ce[alg_name] - slope_window_width // 2
-            second_idx = ce[alg_name] + slope_window_width // 2
-            x_coords = [first_idx, second_idx]
-            y_coords = [run[alg_name][first_idx], run[alg_name][second_idx]]
-            print(x_coords, y_coords)
-            plt.plot(x_coords, y_coords)
-    print(ce)
-    plt.show()
+def convergence_df(batch_name, **kwargs):
+    run_dfs = get_runs(batch_name, min_val=-1000)
+    ce = lambda run: calculate_convergence_episode(run, **kwargs)
+    convergence_episodes = list(map(ce, run_dfs))
+    ce_df = pd.DataFrame(convergence_episodes)
+    return ce_df
+
+
+def print_convergence_times_for_anova(batch_name, **kwargs):
+    ce_df = convergence_df(batch_name, **kwargs)
+    for col in ce_df.columns:
+        times = list(ce_df[col])
+        print('{}: {}'.format(col, times))
+
+
+def print_convergence_values_for_anova(batch_name, num_to_average):
+    """calculates the average score of the last 100 episodes in each run
+    """
+    run_dfs = get_runs(batch_name, -1000)
+    values_lists = {col:[] for col in run_dfs[0].columns}
+    for run in run_dfs:
+        for col in run.columns:
+            last_episodes = run[col][-num_to_average:]
+            value = sum(last_episodes) / len(last_episodes)
+            values_lists[col].append(value)
+    for col in values_lists:
+        print('{}: {}'.format(col, values_lists[col]))
+
+
+def get_runs(batch_name, min_val=None, max_val=None):
+    """Retrieves data and bounds outliers
+    """
+    run_dfs = evaluate.read_run_data(batch_name)
+    #remove outliers
+    if min_val is not None:
+        for i in range(len(run_dfs)):
+            run_dfs[i][run_dfs[i] < min_val] = min_val
+    if max_val is not None:
+        for i in range(len(run_dfs)):
+            run_dfs[i][run_dfs[i] > max_val] = max_val
+    return run_dfs
+
+
 
 if __name__ == '__main__':
-    # plot_rolling()
-    bn = 'all_agents_better_extractor_alpha_1e-1_100_300'
-    # # bn = 'aprox_q_hunter_extractor_hunt_lay_alpha_1e-1_varying_gamma_100_1000'
-    run_dfs = evaluate.read_run_data(bn)
-    run = run_dfs[0]
+    # dump out data used in anova tests
+    params = {
+        'window_width': 200,
+        'slope_window_width': 100,
+        'slope_threshold': .1,
+    }
 
-    plot_run_with_slope_at_convergence(run)
-
-    # window_width = 100
-    # slope_window_width = 10
-    # slope_threshold = 10
-    # ce = calculate_convergence_episode(run, window_width, slope_window_width, slope_threshold)
-    # print(ce)
+    bn1 = 'all_agents_better_extractor_standard_params_mediumClassic_100_1000' #anova P-value: 0.2375
+    print('MediumClass convergence times:')
+    print_convergence_times_for_anova(bn1, **params)
+    print('MediumClass convergence values:')
+    print_convergence_values_for_anova(bn1, num_to_average=100)
+    
+    bn2 = 'all_agents_better_extractor_standard_params_random_layouts_100_1000'
+    print('Randomized Layouts convergence times:')
+    print_convergence_times_for_anova(bn2, **params)
+    print('Randomized Layouts convergence values:')
+    print_convergence_values_for_anova(bn2, num_to_average=100)

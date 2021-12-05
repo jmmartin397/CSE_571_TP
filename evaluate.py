@@ -11,7 +11,6 @@ import pandas as pd
 import os
 import multiprocessing
 from multiprocessing import Pool
-import signal
 from layout_gen import LayoutGen, LayoutGenMultipleBaseLayouts
 
 RUN_DATA_DIRECTORY = './data'
@@ -29,13 +28,10 @@ def train_and_evaluate_worker(args):
         run = {agent_name: [] for agent_name in agents}
         if env['useLayoutGen']:
             if isinstance(env['layout'], list):
-                print('is list')
                 layoutGen = LayoutGenMultipleBaseLayouts(env['layout'], **env['layoutGenParams'])
             else:
-                print('is not list')
                 layoutGen = LayoutGen(env['layout'], **env['layoutGenParams'])
         else:
-            print('no gen')
             layout_to_use = layout.getLayout(env['layout'])
         for agent_name, agent in agents.items():
             for episode_no in range(num_episodes):
@@ -128,7 +124,7 @@ def average_over_runs(runs):
 def generate_graph(batch_name, params):
     runs = read_run_data(batch_name)
     averaged_run_data = average_over_runs(runs)
-    averaged_run_data = averaged_run_data.rolling(50).mean()
+    averaged_run_data = averaged_run_data.rolling(100).mean()
     averaged_run_data.plot()
     title_str = ' | '.join(['{}={}'.format(key, value) for key, value in params.items()])
     plt.title(title_str)
@@ -154,28 +150,6 @@ def get_batch_run_indexes_yet_to_go(batch_name, num_runs):
     return indexes_yet_to_go
 
 
-def anova(batch_name):
-    """ Run an ANOVA (analysis of variance) test on the final episode scores
-    from each run to determine if there is a statistically significant difference
-    in the mean score of each agent at convergence.
-    """
-    runs = read_run_data(batch_name)
-    last_episode_scores = {agent_name: [] for agent_name in runs[0].columns}
-    last_episode_idx = len(runs[0].index) - 1
-    for agent_name in last_episode_scores:
-        for run_df in runs:
-            last_episode_scores[agent_name].append(run_df[agent_name][last_episode_idx])
-
-    # plot histograms to determine if distributions are normal
-    plt.hist(last_episode_scores.values(), label=list(last_episode_scores.keys()), density=True, histtype='bar', bins=15)
-    plt.legend()
-    plt.show()
-
-    # TODO: run ANOVA test
-
-
-bn = 'all_agents_better_extractor_alpha_1e-1_100_300'
-
 if __name__ == '__main__':
     common_params = {
         'alpha': .1,
@@ -183,15 +157,9 @@ if __name__ == '__main__':
         'gamma': .9,
     }
     agent_specific_params = {
-        # 'approx-q-1e-1': {'extractor': 'HunterExtractor', 'alpha':.1},
-        # 'approx-q-1e-2': {'extractor': 'HunterExtractor', 'alpha':.01},
-        # 'approx-q-1e-3': {'extractor': 'HunterExtractor', 'alpha':.001},
         'approx-q': {'extractor': 'BetterExtractor'},
         'epi-sarsa': {'extractor': 'BetterExtractor'},
-        'online-sarsa': {'extractor': 'BetterExtractor', 'lambda': .1},
-        # 'OS-lambda-0.9': {'extractor': 'BetterExtractor', 'lamb': .9},
-        # 'OS-lambda-0.45': {'extractor': 'BetterExtractor', 'lamb': .45},
-        # 'OS-lambda-0.0': {'extractor': 'BetterExtractor', 'lamb': 0},
+        'online-sarsa': {'extractor': 'BetterExtractor', 'lamb': .1},
     }
     agent_classes = {
         # 'approx-q-1e-1': ApproximateQAgent,
@@ -244,7 +212,7 @@ if __name__ == '__main__':
     num_runs = 100
     num_episodes = 1000
 
-    batch_name = 'all_agents_better_extractor_standard_params_mediumClassic_{}_{}'.format(num_runs, num_episodes)
+    batch_name = 'all_agents_better_extractor_standard_params_random_layouts_{}_{}'.format(num_runs, num_episodes)
 
     # a list of run indexes that have not yet been completed
     # (i.e. no run#.csv file for index # yet)
@@ -258,7 +226,7 @@ if __name__ == '__main__':
         agent_classes, 
         common_params, 
         agent_specific_params, 
-        envs['standardPacman'],
+        envs['random'],
         num_episodes,
         proc_count=7
     )
