@@ -115,7 +115,31 @@ def plot_data_sets(batchnames, titles):
 
 
 if __name__ == '__main__':
-    # create figure #TODO: (Time to convergence)
+    # create Fig. 1. (comparison of Lambda values)
+    # bn = 'compare_lambda_better_extractor_alpha_1e-2_100_300'
+    # plot_data_set(bn, 'Effect of Lambda Value')
+    
+    # create Fig. 2. (comparison of Alpha values)
+    # bns = [
+    #     'all_agents_better_extractor_alpha_1e-1_100_300',
+    #     'all_agents_better_extractor_alpha_1e-2_100_300',
+    #     'all_agents_better_extractor_alpha_1e-3_100_300',
+    # ]
+    # titles = [
+    #     'Alpha = 0.1',
+    #     'Alpha = 0.01',
+    #     'Alpha = 0.001',
+    # ]
+    # plot_data_sets(bns, titles)
+
+    # create Fig. 3. (comparison of training convergence)
+    # bn2 = 'all_agents_better_extractor_standard_params_random_layouts_100_1000'
+    # bn1 = 'all_agents_better_extractor_standard_params_mediumClassic_100_1000' #anova P-value: 0.2375
+    # title1 = 'Medium Classic Layout'
+    # title2 = 'Random Layout'
+    # plot_two_batches(bn1, bn2, title1, title2)
+
+    # create Fig. 4. (Time to convergence histograms)
     # params = {
     #     'window_width': 200,
     #     'slope_window_width': 100,
@@ -132,29 +156,4 @@ if __name__ == '__main__':
     #     'Random Layout',
     #     'Time to Convergence'
     # )
-    
-    # create figure #TODO: (comparison of Alpha values)
-    # bns = [
-    #     'all_agents_better_extractor_alpha_1e-1_100_300',
-    #     'all_agents_better_extractor_alpha_1e-2_100_300',
-    #     'all_agents_better_extractor_alpha_1e-3_100_300',
-    # ]
-    # titles = [
-    #     'Alpha = 0.1',
-    #     'Alpha = 0.01',
-    #     'Alpha = 0.001',
-    # ]
-    # plot_data_sets(bns, titles)
-
-    # create figure #TODO: (comparison of Lambda values)
-    # bn = 'compare_lambda_better_extractor_alpha_1e-2_100_300'
-    # plot_data_set(bn, 'Effect of Lambda Value')
-
-    # create figure #TODO: (comparison of training convergence)
-    # bn2 = 'all_agents_better_extractor_standard_params_random_layouts_100_1000'
-    # bn1 = 'all_agents_better_extractor_standard_params_mediumClassic_100_1000' #anova P-value: 0.2375
-    # title1 = 'Medium Classic Layout'
-    # title2 = 'Random Layout'
-
-    # plot_two_batches(bn1, bn2, title1, title2)
     pass

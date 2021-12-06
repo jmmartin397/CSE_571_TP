@@ -39,7 +39,7 @@ def convergence_df(batch_name, **kwargs):
 
 
 def print_convergence_times_for_anova(batch_name, **kwargs):
-    ce_df = convergence_df(batch_name, **kwargs)
+    ce_df = convergence_df(batch_name, **kwargs).dropna()
     for col in ce_df.columns:
         times = list(ce_df[col])
         print('{}: {}'.format(col, times))
@@ -76,20 +76,22 @@ def get_runs(batch_name, min_val=None, max_val=None):
 
 if __name__ == '__main__':
     # dump out data used in anova tests
-    params = {
-        'window_width': 200,
-        'slope_window_width': 100,
-        'slope_threshold': .1,
-    }
+    # params = {
+    #     'window_width': 200,
+    #     'slope_window_width': 100,
+    #     'slope_threshold': .1,
+    # }
 
-    bn1 = 'all_agents_better_extractor_standard_params_mediumClassic_100_1000' #anova P-value: 0.2375
-    print('MediumClass convergence times:')
-    print_convergence_times_for_anova(bn1, **params)
-    print('MediumClass convergence values:')
-    print_convergence_values_for_anova(bn1, num_to_average=100)
+    # bn1 = 'all_agents_better_extractor_standard_params_mediumClassic_100_1000' #anova P-value: 0.2375
+    # # print('MediumClass convergence times:')
+    # # print_convergence_times_for_anova(bn1, **params)
+    # print('MediumClass convergence values:')
+    # print_convergence_values_for_anova(bn1, num_to_average=100)
     
-    bn2 = 'all_agents_better_extractor_standard_params_random_layouts_100_1000'
-    print('Randomized Layouts convergence times:')
-    print_convergence_times_for_anova(bn2, **params)
-    print('Randomized Layouts convergence values:')
-    print_convergence_values_for_anova(bn2, num_to_average=100)
+    # bn2 = 'all_agents_better_extractor_standard_params_random_layouts_100_1000'
+    # print('Randomized Layouts convergence times:')
+    # print_convergence_times_for_anova(bn2, **params)
+    # print('Randomized Layouts convergence values:')
+    # print_convergence_values_for_anova(bn2, num_to_average=100)
+
+
