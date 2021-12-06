@@ -1,6 +1,12 @@
 # CSE_571_TP
 Team Project for CSE 571
 
+Our project was developed using python 3.7.11 and requires the following packages:
+- numpy
+- matplotlib
+- pandas
+- tqdm
+
 *The Pacman training environment is taken from code used in the Berkeley CS188 Course.
 
 Various modifications needed to be made to the following files during development

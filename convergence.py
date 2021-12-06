@@ -93,5 +93,6 @@ if __name__ == '__main__':
     # print_convergence_times_for_anova(bn2, **params)
     # print('Randomized Layouts convergence values:')
     # print_convergence_values_for_anova(bn2, num_to_average=100)
+    pass
 
 
